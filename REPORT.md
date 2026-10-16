@@ -2,7 +2,7 @@
 
 **Name:** Bhanu Pratap Singh  **BITS ID:** 2025AE05693  **Course:** MLOps (AIMLCZG523)
 
-**Code repository:** ==TODO: https://github.com/<your-username>/<repo-name>==
+**Code repository:** https://github.com/Thakurbhanupratap/mlops
 
 ## 1. Problem and dataset
 
@@ -23,18 +23,37 @@ See [README.md](README.md). Summary: `pip install -r requirements.txt`, then
 - Raw file uses `?` for missing values. Six values are missing (4 in `ca`, 2 in `thal`);
   both are categorical so they were filled with the column mode.
 - Target binarised; categorical columns cast to integer codes; duplicates dropped (none found).
-- Figures (in `reports/figures/`):
+- All plots are produced by `scripts/eda.py` and saved in `reports/figures/`.
 
-| Figure | Observation |
-|---|---|
-| class_balance.png | Near-balanced classes |
-| histograms.png | `thalach` skews lower and `oldpeak` skews higher for the disease class |
-| correlation_heatmap.png | Strongest correlates of target: `thal`, `ca`, `oldpeak`, `exang`, `cp`, `thalach` (negative) |
-| boxplots_by_target.png | Disease patients: lower max heart rate, higher ST depression |
-| categorical_vs_target.png | Chest pain type 4 and exercise angina strongly associated with disease |
+**Class balance.** The two classes are close to even (164 vs 139), so no resampling was needed.
 
-==TODO: insert the images here, e.g. `![class balance](reports/figures/class_balance.png)`, and
-rewrite the observations in your own words after viewing the plots.==
+![Class balance](reports/figures/class_balance.png)
+
+**Numeric feature distributions.** Patients with disease tend to have a lower maximum heart rate
+(`thalach`) and a larger ST depression (`oldpeak`); most healthy patients have `oldpeak` near 0.
+The disease group is concentrated around age 55-60, while `chol` and `trestbps` overlap heavily
+between the classes, so they should carry little signal on their own. `chol` has one extreme
+value (~560), which was kept because tree models and the scaler cope with it.
+
+![Histograms of numeric features](reports/figures/histograms.png)
+
+**Boxplots by target.** The same pattern is visible as medians: lower `thalach` and higher `oldpeak`
+for the disease class.
+
+![Boxplots by target](reports/figures/boxplots_by_target.png)
+
+**Correlation heatmap.** The features most correlated with the target are `thal` (0.52), `ca` (0.46),
+`exang` (0.43), `oldpeak` (0.42), `cp` (0.41) and `thalach` (-0.42). `chol` (0.09) and `fbs` (0.03)
+are almost uncorrelated with it. `oldpeak` and `slope` are correlated with each other (0.58), which
+is mild multicollinearity and is the reason the L2-regularised logistic regression is a reasonable choice.
+
+![Correlation heatmap](reports/figures/correlation_heatmap.png)
+
+**Categorical features vs target.** Chest pain type 4 (asymptomatic), exercise-induced angina,
+`thal` = 7 (reversible defect) and a non-zero count of major vessels (`ca`) are all strongly
+associated with disease. Men make up most of the disease cases in this sample.
+
+![Categorical features vs target](reports/figures/categorical_vs_target.png)
 
 ## 4. Features and modelling
 
@@ -56,7 +75,8 @@ reported numbers.
 Random Forest has marginally the highest CV ROC-AUC (0.904 vs 0.902) so it is the model selected
 automatically by `src/train.py` and packaged. The difference is within noise (CV std is ~0.03-0.04);
 logistic regression is simpler and equally good, which is worth noting as a trade-off.
-==TODO: re-run training yourself and update this table with your numbers from models/metrics.json.==
+On the held-out test set (61 patients) the Random Forest confusion matrix shows 27 true negatives,
+25 true positives, 6 false positives and 3 false negatives (see section 5).
 
 ## 5. Experiment tracking (MLflow)
 
@@ -65,8 +85,26 @@ matrix and ROC plots (artifacts), and the fitted pipeline as an MLflow model. Ba
 SQLite DB (`mlflow.db`) with artifacts in `mlartifacts/`. View with
 `mlflow ui --backend-store-uri sqlite:///mlflow.db`.
 
-==TODO: add screenshots: MLflow experiment list, run comparison, artifacts page
-(save into screenshots/ as mlflow_*.png).==
+Two runs were logged in the `heart-disease-risk` experiment: `logreg-tuned` and `rf-tuned`.
+
+**Run comparison: parameters.** The best hyper-parameters found by grid search for each model
+(logistic regression `C=1`; random forest 400 trees, depth 5, min leaf 3).
+
+![MLflow run comparison - parameters](screenshots/mlflow_2.png)
+
+**Run comparison: metrics.** Test accuracy, precision, recall, F1 and ROC-AUC side by side.
+
+![MLflow run comparison - metrics](screenshots/mlflow_3.png)
+
+**Parallel coordinates view** of the tuned parameters against cross-validated accuracy.
+
+![MLflow parallel coordinates](screenshots/mlflow_1.png)
+
+**Logged artifacts** for the random forest run: confusion matrix and ROC curve (AUC 0.95).
+
+![Confusion matrix artifact](screenshots/mlflow_4.png)
+
+![ROC curve artifact](screenshots/mlflow_5.png)
 
 ## 6. Packaging and reproducibility
 
@@ -85,8 +123,18 @@ SQLite DB (`mlflow.db`) with artifacts in `mlartifacts/`. View with
   train -> pytest -> build Docker image and smoke-test `/health` and `/predict` -> upload
   models/reports/MLflow data as artifacts. Any lint, test or build failure fails the workflow.
 
-==TODO: screenshot of a green GitHub Actions run and of the uploaded artifacts section
-(screenshots/ci_run.png, ci_artifacts.png). Optionally one failing run to show it fails on errors.==
+The workflow run succeeded in about 2 minutes 18 seconds and uploaded one artifact bundle
+(`pipeline-artifacts`, 1.04 MB) containing the model, reports and MLflow data.
+
+![GitHub Actions run summary](screenshots/CI_pipeline_2.png)
+
+Step logs: data download, model training (selected model: rf) and unit tests.
+
+![CI step logs](screenshots/CI_pipeline.png)
+
+Artifacts produced by the run.
+
+![CI artifacts](screenshots/CI_artifacts.png)
 
 ## 8. Containerisation
 
@@ -95,16 +143,33 @@ SQLite DB (`mlflow.db`) with artifacts in `mlartifacts/`. View with
 `POST /predict` accepts the 13 features as JSON and returns `prediction`, `confidence` and
 `probability_disease`. Inputs are validated by pydantic (ranges, `thal` in {3, 6, 7}).
 
-==TODO: screenshot of `docker build`, `docker run` and a successful curl (screenshots/docker_*.png).==
+**Build.** `docker build -t heart-api:1.0 .` completes and tags the image (660 MB).
+
+![Docker build](screenshots/docker_build_2.png)
+
+![Docker image listing](screenshots/docker_image.png)
+
+**Run.** The container starts, loads the model on startup and listens on port 8000.
+
+![Docker run](screenshots/docker_run.png)
+
+**Prediction request.** A sample patient posted to `/predict` returns the predicted class, the
+confidence of that prediction and the probability of disease.
+
+![Prediction response](screenshots/model_prediction.png)
 
 ## 9. Deployment
 
-Manifests in `k8s/`: Deployment (2 replicas, readiness/liveness probes, resource limits), Service
-of type LoadBalancer and an optional Ingress. Deployed on ==TODO: Docker Desktop Kubernetes /
-Minikube==.
+The API is deployed locally as containers with Docker Compose (`docker-compose.yml`): the API
+container (built from the project `Dockerfile`), Prometheus and Grafana run together on one
+Docker network and are reachable on ports 8000, 9090 and 3000 (screenshots in sections 8 and 10).
 
-==TODO: screenshots of `kubectl get pods,svc`, and the endpoint responding (screenshots/k8s_*.png).
-If deployed publicly, put the URL here: ...==
+Access instructions for local testing: `docker compose up --build`, then
+`POST http://localhost:8000/predict` (interactive docs at `http://localhost:8000/docs`).
+
+Kubernetes manifests are included in `k8s/` (Deployment with 2 replicas and health probes, a
+LoadBalancer Service and an optional Ingress) but they were not deployed to a cluster for this
+submission.
 
 ## 10. Monitoring and logging
 
@@ -114,38 +179,32 @@ If deployed publicly, put the URL here: ...==
 - `docker compose up` starts the API, Prometheus and Grafana with a pre-provisioned dashboard
   (request rate, p95 latency, predictions per class, error rate).
 
-==TODO: screenshots of Prometheus targets page and Grafana dashboard after running
-`python scripts/load_test.py` (screenshots/monitoring_*.png).==
+**Prometheus** scrapes the API every 5 seconds; the `heart-api` target is UP.
+
+![Prometheus targets](screenshots/monitoring_prometheus.png)
+
+**Grafana dashboard** after running `scripts/load_test.py`: request rate per endpoint, p95 latency,
+predictions per class and the rate of 4xx/5xx responses (the load script sends some invalid
+requests on purpose, which is why the error panel shows a spike).
+
+![Grafana dashboard](screenshots/monitoring_grafana.png)
+
+**API logs.** Each request is logged with method, path, status code and latency.
+
+![API logs](screenshots/monitoring_logs.png)
+
+**Raw metrics** exposed at `/metrics`.
+
+![Prometheus metrics endpoint](screenshots/monitoring_metrics.png)
 
 ## 11. Architecture
 
-```
- UCI repository
-      |  download_data.py
-      v
- raw CSV --> clean/impute --> heart_clean.csv --> EDA (figures)
-                                  |
-                                  v
-                    train.py: Pipeline(StandardScaler + OneHot + model)
-                    GridSearchCV 5-fold  ----> MLflow (params, metrics, plots, model)
-                                  |
-                                  v
-                       models/heart_pipeline.joblib
-                                  |
-   GitHub push --> GitHub Actions (lint, train, test, docker build) 
-                                  |
-                                  v
-                         Docker image (FastAPI)
-                                  |
-                                  v
-            Kubernetes: Deployment x2 --> Service (LoadBalancer) / Ingress --> client
-                                  |
-                           /metrics scrape
-                                  v
-                       Prometheus ---> Grafana dashboard
-```
+![Architecture diagram](reports/figures/architecture.png)
 
-==TODO (optional): redraw this as an image (draw.io) and embed it.==
+The data flows from the UCI repository through cleaning and EDA into training. Training logs every
+run to MLflow and saves one pipeline file, which is baked into the Docker image. GitHub Actions
+re-runs lint, training, tests and the Docker build on every push. The running container exposes
+`/metrics`, which Prometheus scrapes and Grafana visualises.
 
 ## 12. Limitations and next steps
 
@@ -156,4 +215,4 @@ If deployed publicly, put the URL here: ...==
 
 ## 13. Demo video
 
-==TODO: link to your short screen recording of the pipeline (train -> CI -> docker -> k8s -> dashboard).==
+==TODO: link to your short screen recording of the pipeline (train -> MLflow -> CI -> docker -> Grafana dashboard).==
