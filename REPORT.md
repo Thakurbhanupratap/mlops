@@ -212,3 +212,11 @@ re-runs lint, training, tests and the Docker build on every push. The running co
 - No automatic retraining or drift detection; the next step would be data-drift metrics and a
   scheduled retraining workflow.
 - Model is a decision-support demo, not a medical device.
+
+## 13. Demo video
+
+A short walkthrough of the pipeline (architecture, EDA, training, MLflow, CI, Docker, API
+prediction, Prometheus/Grafana monitoring):
+https://drive.google.com/file/d/14Asgfh7xBR8TSk25dNophkGbxzHgQu49/view?usp=sharing
+
+The same file is also in the repository at `demo/pipeline_demo.mp4`.
