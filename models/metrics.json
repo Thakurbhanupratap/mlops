@@ -3,7 +3,7 @@
   "runs": [
     {
       "model": "logreg",
-      "run_id": "29071ac3da06431282fc88be28245616",
+      "run_id": "d7a59387eb914da4a4127d63464642d7",
       "best_params": {
         "clf__C": "1"
       },
@@ -23,7 +23,7 @@
     },
     {
       "model": "rf",
-      "run_id": "069fe2c7375547e79fe81100763eebf1",
+      "run_id": "ad3face8add44238bb9bd60feb5222cc",
       "best_params": {
         "clf__max_depth": "5",
         "clf__min_samples_leaf": "3",

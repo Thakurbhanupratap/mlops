@@ -79,7 +79,7 @@ Generate traffic for the dashboard with `python scripts/load_test.py`.
 
 ## Demo video
 
-https://drive.google.com/file/d/14Asgfh7xBR8TSk25dNophkGbxzHgQu49/view?usp=sharing (also in `demo/pipeline_demo.mp4`)
+https://drive.google.com/file/d/14Asgfh7xBR8TSk25dNophkGbxzHgQu49/view?usp=sharing (screen recording of the full pipeline; also in `demo/pipeline_demo.mp4`)
 
 ## Report
 

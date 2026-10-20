@@ -215,8 +215,10 @@ re-runs lint, training, tests and the Docker build on every push. The running co
 
 ## 13. Demo video
 
-A short walkthrough of the pipeline (architecture, EDA, training, MLflow, CI, Docker, API
-prediction, Prometheus/Grafana monitoring):
+Screen recording (about 5.5 minutes) of the whole pipeline running end to end: data download and
+cleaning, EDA, model training, MLflow runs, lint and unit tests, the GitHub Actions runs, Docker
+image build and container run with `/health` and `/predict` calls, and the Prometheus and Grafana
+monitoring stack with live traffic:
 https://drive.google.com/file/d/14Asgfh7xBR8TSk25dNophkGbxzHgQu49/view?usp=sharing
 
 The same file is also in the repository at `demo/pipeline_demo.mp4`.
