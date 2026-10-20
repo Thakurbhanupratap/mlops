@@ -212,7 +212,3 @@ re-runs lint, training, tests and the Docker build on every push. The running co
 - No automatic retraining or drift detection; the next step would be data-drift metrics and a
   scheduled retraining workflow.
 - Model is a decision-support demo, not a medical device.
-
-## 13. Demo video
-
-==TODO: link to your short screen recording of the pipeline (train -> MLflow -> CI -> docker -> Grafana dashboard).==
